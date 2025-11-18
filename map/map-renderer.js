@@ -93,18 +93,6 @@ export class MapRenderer {
                 
                 // IF we want them to stand up, we must move them to renderYSorted logic in game/renderer.js
                 // IF we want them flat (like a rug), we draw them here.
-                // "Logs" -> usually 3D object lying down? Or pile?
-                // "Bushes" -> usually standing.
-                // "Flower patch" -> flat on ground.
-                
-                // Let's keep FLOWER_PATCH as flat (ground detail).
-                // Let's move LOGS and BUSHES to "standing up" in game/renderer.js?
-                // The prompt says "2D assets stand up".
-                
-                // For now, to keep it simple and consistent with previous logic, I will check tileType.
-                // If it's flower patch, draw here (flat).
-                // If it's logs/bushes, we SKIP drawing here in 2.5D mode and let a new logic handle it?
-                // OR we just draw them flat for now if 'standing up' is complex refactor.
                 
                 // Actually, the easiest way to make them "stand up" is to NOT draw them in this transformed context,
                 // but draw them in the entity pass.
@@ -124,52 +112,8 @@ export class MapRenderer {
             }
         }
         
-        // Grid lines
-        if (viewMode === '2d') {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-            ctx.lineWidth = 1;
-            // ... existing grid drawing ...
-             for (let i = drawStartX; i <= drawEndX; i++) {
-                if (i > this.map.width) continue; 
-                const x = i * ts;
-                ctx.beginPath();
-                ctx.moveTo(x, drawStartY * ts);
-                ctx.lineTo(x, drawEndY * ts);
-                ctx.stroke();
-            }
-            for (let j = drawStartY; j <= drawEndY; j++) {
-                if (j > this.map.height) continue;
-                const y = j * ts;
-                ctx.beginPath();
-                ctx.moveTo(drawStartX * ts, y);
-                ctx.lineTo(drawEndX * ts, y);
-                ctx.stroke();
-            }
-        } else {
-            // 2.5D Grid Lines
-            // Since we have the transform applied, drawing straight lines (x, y) works and they get skewed!
-             ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; // More subtle in 2.5D
-             ctx.lineWidth = 1;
-             // We need to cover the visible area.
-             for (let i = drawStartX - pad; i <= drawEndX + pad; i++) {
-                if (i < 0 || i > this.map.width) continue;
-                const x = i * ts;
-                // Line from top of view to bottom of view in grid space?
-                // Just draw grid lines for the loops we iterated
-                ctx.beginPath();
-                ctx.moveTo(x, (drawStartY - pad) * ts);
-                ctx.lineTo(x, (drawEndY + pad) * ts);
-                ctx.stroke();
-            }
-             for (let j = drawStartY - pad; j <= drawEndY + pad; j++) {
-                if (j < 0 || j > this.map.height) continue;
-                const y = j * ts;
-                ctx.beginPath();
-                ctx.moveTo((drawStartX - pad) * ts, y);
-                ctx.lineTo((drawEndX + pad) * ts, y);
-                ctx.stroke();
-            }
-        }
+        // NOTE: Grid line rendering has been removed to avoid visible grid lines in both 2D and 2.5D views.
+        // Previously, subtle grid lines were drawn here; they are now intentionally omitted.
 
         ctx.restore();
     }
