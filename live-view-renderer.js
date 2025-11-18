@@ -44,6 +44,11 @@ export class LiveViewRenderer {
         this.zoom = 0.75;
         this.minZoom = 0.4;
         this.maxZoom = 2;
+
+        // Disable smoothing to avoid visible seams between tiles when scaled
+        if (this.ctx) {
+            this.ctx.imageSmoothingEnabled = false;
+        }
     }
 
     async loadAssets() {
@@ -144,7 +149,7 @@ export class LiveViewRenderer {
         if (mapChunk) {
             if (viewMode === '2.5d') {
                 ctx.save();
-                // Snap camera to whole pixels for smoother motion
+                // Snap camera to whole pixels for smoother motion and to avoid seams
                 const snappedCameraX = Math.round(cameraX);
                 const snappedCameraY = Math.round(cameraY);
                 ctx.translate(-snappedCameraX, -snappedCameraY);
@@ -163,18 +168,22 @@ export class LiveViewRenderer {
                             worldX < mapChunk.origin.x ||
                             worldX >= mapChunk.origin.x + mapChunk.grid[0].length) {
                             // Just draw grass outside known chunk so ground doesn't look cut
-                            ctx.drawImage(this.assets.grass, worldX * ts, worldY * ts, ts, ts);
+                            const drawX = Math.floor(worldX * ts) - 0.5;
+                            const drawY = Math.floor(worldY * ts) - 0.5;
+                            ctx.drawImage(this.assets.grass, drawX, drawY, ts + 1, ts + 1);
                             continue;
                         }
 
                         const tileType = mapChunk.grid[worldY - mapChunk.origin.y][worldX - mapChunk.origin.x];
                         if (tileType === null) continue;
 
-                        ctx.drawImage(this.assets.grass, worldX * ts, worldY * ts, ts, ts);
+                        const drawX = Math.floor(worldX * ts) - 0.5;
+                        const drawY = Math.floor(worldY * ts) - 0.5;
+                        ctx.drawImage(this.assets.grass, drawX, drawY, ts + 1, ts + 1);
 
                         // Flat ground details (flowers only). Logs/bushes/trees stand up later.
                         if (tileType === TILE_TYPE.FLOWER_PATCH) {
-                            ctx.drawImage(this.assets.flowers, worldX * ts, worldY * ts, ts, ts);
+                            ctx.drawImage(this.assets.flowers, drawX, drawY, ts + 1, ts + 1);
                         }
                     }
                 }
@@ -193,7 +202,10 @@ export class LiveViewRenderer {
                         const screenX = Math.round(worldX * ts - cameraX);
                         const screenY = Math.round(worldY * ts - cameraY);
 
-                        ctx.drawImage(this.assets.grass, screenX, screenY, ts, ts);
+                        // Slightly overlap tiles to hide any subpixel gaps
+                        const drawX = screenX - 0.5;
+                        const drawY = screenY - 0.5;
+                        ctx.drawImage(this.assets.grass, drawX, drawY, ts + 1, ts + 1);
 
                         let objectImage = null;
                         if (tileType === TILE_TYPE.LOGS) objectImage = this.assets.logs;
@@ -201,8 +213,7 @@ export class LiveViewRenderer {
                         else if (tileType === TILE_TYPE.FLOWER_PATCH) objectImage = this.assets.flowers;
 
                         if (objectImage) {
-                            // Trees are drawn later; keep logs/bushes/flowers flat in 2D
-                            ctx.drawImage(objectImage, screenX, screenY, ts, ts);
+                            ctx.drawImage(objectImage, drawX, drawY, ts + 1, ts + 1);
                         }
                     }
                 }
